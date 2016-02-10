@@ -1,0 +1,4 @@
+USAhubs1 and 2 have     if mod(current_time,1) == 0
+USAhubs3 has     if mod(current_time,0.1) == 0
+USAhubs4 has     if mod(current_time,0.02) == 0
+
