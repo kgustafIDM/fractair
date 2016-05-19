@@ -1,9 +1,47 @@
 function [transfer_rates,system_state,time] = airflight_diffusion(end_time, outfreq, input_counts, transfer_prob, ...
     transfer_int, minpop, startfly_time, googleflu, flufuncarray, ffcarrayid)
 
-% framework for a tau-leaping simulation
-% from Bayati, JCP, 2013
-% SSA adapted from Burrage and Carletti
+% This function performs the main work "under the hood" for the tau-leaping
+% timestepper that combines the generalized diffusion (fractional) with the
+% compartmental reaction system of SIR or SIS. It is meant to be called
+% from function air_paramscam.m, where the airflight_input.m function is
+% also called to set the input parameters. Thus, all initialization and
+% output for the air traffic simulation is performed in air_paramscan.m
+
+% The algorithm framework used here for a tau-leaping simulation is from Bayati, JCP, 2013
+% The stochastic simulation algorithm used here (roughly Gillespie) is
+% adapted from Burrage and Carletti open source on web
+
+% simple reaction simulation implemented here
+% from Bayati JCP 2013
+
+% 1.) a = (a1,a2,...)^T : probability of reactions
+% 2.) deltat_r = Tt : sample from exponential
+% 3.) l = Qq ~ a_j(t)/a_0(t) : sample point-wise distribution of a
+% 4.) n_bar(t + deltat_r) = n_bar(t) + nu_l
+
+% multinomial stochastic algorithm with Lie-Trotter splitting and tau-leap
+
+% 1.) a = (a1,a2,...)^T : the probablility of reactions
+% 2.) deltat_r = Tt : sample from exponential or other type of reaction
+% 3.) deltat_d = Dd : time-step restriction
+% 4.) deltat = min(deltat_r,deltat_d)
+% for all i do
+% 5.) k_i ~ Pp(a_i*deltat) : number of executions for each channel i
+% end for
+% 6.) n_bar(t + deltat/2) = n_bar(t) + sum_l[k_l*nu_l] : state vector,
+%                                                        number of particles
+% 7.) nu_d = 0 : diffusion transitions
+% for all lambda do : loop over cells, spatial discretization
+% 8.) k1 ~ Bb(n_barlambda(t + deltat/2),Gg_lambdam1_lambda(deltat) :
+%           binomial distribution Bb(L,p) of L trials, probability p
+% 9.) k2 ~ Bb(n_barlambda(t + deltat/2) - k1,
+%               (Gg_lambdap1_lambda(deltat))/(1-Gg_lambdam1_lambda(deltat))
+% 10.) nu_lambda_d = nu_lambda_d - (k1 + k2) : movement out of lambda
+% 11.) nu_lambdam1_d = nu_lambdam1_d + k1 : movement into neighbor
+% 12.) nu_lambdap1_d = nu_lambdap1_d + k2 : movement into other neighbor
+% end for
+% 13.) n_bar(t + deltat) = n_bar(t + deltat/2) + nu_d : new state vector
 
 global syst_type alpha_0 beta_0 rates num_channels num_nodes 
 global restart tauleap

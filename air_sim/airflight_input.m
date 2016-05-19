@@ -3,13 +3,15 @@ function [googleflu,country,startfly_time,outfreq,transfer_int,num_nodes,total_i
 % input parameters for air network diffusion
 % meant to be modified by user for each production run
 
-% use the open source fftf filtering program to get top 10 Fourier coeffs
-% for the google flu data for the entire country
+% optional: use the open source fftf filtering program to get top 10 Fourier coeffs
+% by Fourier transforming the Google Flu data for the entire country
 
-% for using Google flu data
+% to activate the Google flu data
 googleflu = 1; % on is 1
 
+% many countries are available, please inquire to kgustafson@idmod.org to discuss
 country = 'USA'
+% placeholder
 infecthub = 0;
 gflu51states = 1; 
 idState = 0;

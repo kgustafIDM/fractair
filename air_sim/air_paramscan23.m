@@ -1,37 +1,6 @@
-function runname = air_paramscan23(nodeid,platform)
+function runname = air_paramscan(nodeid,platform)
 
 % platform: unix/mac=1, windows=1 
-
-% simple reaction simulation
-% from Bayati JCP 2013
-
-% 1.) a = (a1,a2,...)^T : probability of reactions
-% 2.) deltat_r = Tt : sample from exponential
-% 3.) l = Qq ~ a_j(t)/a_0(t) : sample point-wise distribution of a
-% 4.) n_bar(t + deltat_r) = n_bar(t) + nu_l
-
-% multinomial stochastic algorithm with Lie-Trotter splitting and tau-leap
-
-% 1.) a = (a1,a2,...)^T : the probablility of reactions
-% 2.) deltat_r = Tt : sample from exponential or other type of reaction
-% 3.) deltat_d = Dd : time-step restriction
-% 4.) deltat = min(deltat_r,deltat_d)
-% for all i do
-% 5.) k_i ~ Pp(a_i*deltat) : number of executions for each channel i
-% end for
-% 6.) n_bar(t + deltat/2) = n_bar(t) + sum_l[k_l*nu_l] : state vector,
-%                                                        number of particles
-% 7.) nu_d = 0 : diffusion transitions
-% for all lambda do : loop over cells, spatial discretization
-% 8.) k1 ~ Bb(n_barlambda(t + deltat/2),Gg_lambdam1_lambda(deltat) :
-%           binomial distribution Bb(L,p) of L trials, probability p
-% 9.) k2 ~ Bb(n_barlambda(t + deltat/2) - k1,
-%               (Gg_lambdap1_lambda(deltat))/(1-Gg_lambdam1_lambda(deltat))
-% 10.) nu_lambda_d = nu_lambda_d - (k1 + k2) : movement out of lambda
-% 11.) nu_lambdam1_d = nu_lambdam1_d + k1 : movement into neighbor
-% 12.) nu_lambdap1_d = nu_lambdap1_d + k2 : movement into other neighbor
-% end for
-% 13.) n_bar(t + deltat) = n_bar(t + deltat/2) + nu_d : new state vector
 
 if platform==1
     !touch ../results/filefile.fl
@@ -39,39 +8,70 @@ elseif platform==2
     !type NUL > ..\results\filefile.fl
 end
 
+% Several important parameters are set to be global for convenience and
+% safety.
+
 global restart tauleap
 global species1 species2 syst_type alpha_0 beta_0 rates num_channels num_nodes
 global init_inf_percent total_indiv
 global cycle_period cycle_x cycle_phase
 
-
-% temporary num_nodes = size(nodecodesUSA,1);
+% The nodeid is typically specified in runairparamscan.m as part of a
+% parameter scan through different initial infected nodes. Of course this
+% is a parameter scan only in the sense that the initial location of the
+% infection is a parameter.
 
 infecthub = nodeid;
 
+% Another possible initial condition for the infection, useful for studying
+% the wavefront of the infection propagation, is a step-wise infection. The
+% step is a bit difficult to define on the air travel network, so it has
+% been hardwired below as an infection in the first 1/3 of the list of
+% nodes, which is sorted alphabetically, so this is not an actual
+% geographic step, but rather a curiosity. 
+
+% this should usually be set to zero
 step_infect = 0;
 
-restart = 0;
 
-tauleap = 0;
+% It is possible to restart a paused simulation if an intermediate
+% simulation state has been saved as "temptime.mat". This will cause
+% intermediate input_counts and an intermediate time to be set as the
+% initial conditions.
+
+restart = 0; % if set to 1 (on), then a temptime.mat input file must be in the running folder
+
+% Here, an important choice is made between doing a stochastic simulation,
+% where a Poisson random number is chosen around the mean value for a
+% reaction propensity, or if the mean value is used instead. See
+% airflight_diffusion and Bayati JCP 2013 for more details.
+
+tauleap = 0; % if set to 1 (on), the reaction process will be stochastic
 
 % total time in years
 end_time = 5;
 
-% input parameters for reactions
+% Choose the type of compartmental model for the disease: SI/SIR/SIS are
+% supported and specified through the stoichiometric rate matrices found
+% below.
 
 syst_type = 'SIS';
 
-% allow alpha to cycle for seasonality
+% Cycling parameters for seasonality, which is implemented as an
+% oscillation in alpha within the airflight_diffusion backend. 
+
 cycle_period = 0; % units of years
 cycle_x = 0.5;
 cycle_phase = 0.0;
+
+% Set the important parameters for the SIR or SIS compartmental model
+% notice that the R_0 value is tunable, rather than the alpha_0 
 
 R_0 = 2;  % reproductive number magnitude
 beta_0 = 3; % recovery rate
 alpha_0 = R_0*beta_0; % infection rate per unit infected
 
-% rate matrix (stoichiometry)
+% Compartmental model rate matrix (stoichiometry)
 if strcmp(syst_type,'SI')
     rates = [-1 0; 1 0];
 elseif strcmp(syst_type,'SIR')
@@ -91,14 +91,21 @@ species2 = 2; % infected
 % use the open source fftf filtering program to get top 10 Fourier coeffs
 % for the google flu data for the entire country
 
+% Initialize the infection, defaults
+
 init_inf_percent = 50; % measure infected percentage-wise
 total_indiv = 1000; %round(1000.*nn./mean(nn(tophubsUSA)))+100; % 100 sets a minimum
 %infecthub = 1; % default infected hub
+
+% the deltafect parameter should be ignored
 deltafect = 1; % all other hubs have zero infection
 % requiring a floor on population
 minpop = 0;
 
 %[grid_dim,dumdum,center,bumbum,num_nodes,infecthub,step_infect,kernex] = fracflight_input;
+
+% Call the file with most of the input parameters
+
 [googleflu,~,startfly_time,outfreq,transfer_int,num_nodes,total_indiv,transfer_prob,gflu51states,idState,nodeidUSA,nodecodesUSA] = airflight_input;
 
 % initial state baseline

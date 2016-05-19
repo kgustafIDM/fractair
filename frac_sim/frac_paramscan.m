@@ -1,4 +1,4 @@
-function runname = frac_paramscan43(Dalpha,alphafrac,platform)
+function runname = frac_paramscan(Dalpha,alphafrac,platform)
 
 % platform: unix/mac=1, windows=2 
 
@@ -63,7 +63,7 @@ restart = 0;
 tauleap = 1;
 
 % total time in years
-end_time = 1;
+end_time = 4;
 
 % input parameters for reactions
 
@@ -134,7 +134,7 @@ end
 
 
 [transfer_rates,final_state,time_vector] = fracflight_diffusion(end_time,initial_states,Dalpha,hfrac,alphafrac,center,grid_dim,kernex,fracorder);
-runname = sprintf('frac_fig2noise_%.2f_%.2f',Dalpha,alphafrac);
+runname = sprintf('frac%d%d_fig2noise_%.2f_%.2f',R_0,beta_0,Dalpha,alphafrac);
 %timev = time_vector; 
 % 
 % h1=figure('Visible','off'); plot(time_vector,squeeze(mean(final_state(2,:,:),3))./1000,'k','Displayname',runname);
